@@ -1,0 +1,24 @@
+# Run this command to start the database:
+# docker-compose up --build
+version: "3"
+services:
+  db:
+    hostname: 127.0.0.1
+    image: pgvector/pgvector:pg16
+    ports:
+      # postgres 의 기본 포트
+      - 5432:5432
+      # 현재 5432 포트 사용중인 경우 대체 포트 사용
+      # - 5433:5432
+    restart: always
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=women_its
+      - POSTGRES_PASSWORD=women_its
+    volumes:
+      # - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      # - ./postgres-data:/var/lib/postgresql/data
+      - pgvector_data:/var/lib/postgresql/data  # 로컬 폴더 대신 Docker 볼륨 사용
+
+volumes:
+  pgvector_data:
