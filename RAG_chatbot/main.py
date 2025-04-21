@@ -1,4 +1,10 @@
-from data_loader import load_pdfs, load_center_data, create_text_splitter, split_documents
+from data_loader import (
+    load_pdfs,
+    load_center_data,
+    load_all_hanultari_jsons,
+    create_text_splitter,
+    split_documents,
+)
 from vector_store import create_vector_store, create_retriever
 from model import create_qa_chain
 
@@ -19,6 +25,13 @@ def main():
     print("다문화가족지원센터 데이터 로딩 중...")
     center_pdf = "data/다문화가족지원센터 현황(공공데이터).pdf"
     center_docs = load_center_data(center_pdf)
+
+    # 한울타리 JSON 데이터 로드
+    print("한울타리 정책 프로그램 데이터 로딩 중...")
+    hanultari_docs = load_all_hanultari_jsons("data/")
+    hanultari_chunks = split_documents(hanultari_docs, text_splitter)
+    vector_store.add_documents(hanultari_chunks)
+    print(f"한울타리 프로그램 데이터 {len(hanultari_chunks)}개 청크가 추가되었습니다.")
     
     # 다문화가족지원센터 데이터 분할 및 추가
     center_chunks = split_documents(center_docs, text_splitter)
