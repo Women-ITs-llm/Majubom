@@ -1,93 +1,70 @@
-# RAG_chatbot/scripts/update_hanultari.py
-
 import os
 import sys
-import re
 import asyncio
+import json
+from datetime import date
+from typing import List
 from dotenv import load_dotenv
-from langchain_core.documents import Document
+from pydantic import BaseModel
 from langchain_openai import ChatOpenAI
-from browser_use import Agent
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
-from RAG_chatbot.vector_store import create_vector_store
+from browser_use import Agent, Controller
 
-# 경로 및 환경 변수 설정
+# 경로 설정
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
+
 load_dotenv()
 
-def parse_markdown_result(result: str) -> list[Document]:
-    """Agent가 반환한 markdown 문자열에서 프로그램 정보를 파싱해 Document 리스트로 변환"""
-    program_blocks = re.split(r"\n\d+\.\s+\*\*Title\*\*:", result.strip())
-    documents = []
+# ✅ Pydantic 모델 정의
+class KoreanProgram(BaseModel):
+    title: str
+    summary: str
+    location: str
+    dates: str
 
-    for block in program_blocks[1:]:  # 첫 번째는 빈 문자열일 수 있음
-        title_match = re.search(r"^(.*?)\n", block)
-        summary_match = re.search(r"\*\*Summary\*\*: (.*?)\n", block)
-        location_match = re.search(r"\*\*Location\*\*: (.*?)\n", block)
-        date_match = re.search(r"\*\*Date\*\*: (.*)", block)
+class KoreanPrograms(BaseModel):
+    programs: List[KoreanProgram]
 
-        parts = []
-        if title_match:
-            parts.append("Title: " + title_match.group(1).strip())
-        if summary_match:
-            parts.append("Summary: " + summary_match.group(1).strip())
-        if location_match:
-            parts.append("Location: " + location_match.group(1).strip())
-        if date_match:
-            parts.append("Date: " + date_match.group(1).strip())
+# ✅ Controller 선언
+controller = Controller(output_model=KoreanPrograms)
 
-        if parts:
-            doc = Document(page_content="\n".join(parts), metadata={"source": "hanultari"})
-            documents.append(doc)
-
-    return documents
-
-
-async def fetch_hanultari_documents() -> tuple[list[Document], str]:
-    """한울타리 사이트에서 다문화가족 지원 프로그램을 추출해 Document 리스트로 반환"""
+# ✅ 실행 함수
+async def fetch_hanultari_data():
     agent = Agent(
         task="""
-        Visit https://mcfamily.or.kr/ko/programs/family?page=1
-        Extract only the first 10 multicultural family support programs in Korean.
-        Include: title, summary, location, and date.
-        Do not include HTML or unrelated information.
+        Visit https://mcfamily.or.kr/programs/korean?page=1.
+        Extract all multicultural family support programs.
+        Each object should include: "title", "summary", "location", and "dates".
+        Return only a valid JSON object with the key "programs".
         """,
+        controller=controller,
         llm=ChatOpenAI(
-            model="deepseek/deepseek-chat:free",
-            openai_api_base="https://openrouter.ai/api/v1",
-            openai_api_key=os.getenv("OPENROUTER_API_KEY"),
-            max_tokens=2048
-        ),
+            model="gpt-4o-mini",
+            openai_api_key=os.getenv("OPENAI_API_KEY")
+        )
     )
 
-    result = await agent.run()
+    # Agent 실행
+    history = await agent.run()
+    result = history.final_result()
 
-    if isinstance(result, str):
-        documents = parse_markdown_result(result)
-    else:
-        documents = []
+    if not result:
+        raise ValueError("❌ Agent 결과 없음")
 
-    return documents, result
+    try:
+        parsed: KoreanPrograms = KoreanPrograms.model_validate_json(result)
+    except Exception as e:
+        print("❌ Pydantic 파싱 실패:", e)
+        print("🔍 원본 결과:", result[:300])
+        raise
 
+    # JSON 저장
+    os.makedirs("RAG_chatbot/data", exist_ok=True)
+    save_path = f"RAG_chatbot/data/hanultari_{date.today()}.json"
+    with open(save_path, "w", encoding="utf-8") as f:
+        json.dump(parsed.dict(), f, ensure_ascii=False, indent=2)
 
-def main():
-    print("\n🌐 한울타리 정책 크롤링 중...")
-    documents, raw_result = asyncio.run(fetch_hanultari_documents())
-
-    if not documents:
-        print("\u274c 크롤링된 문서가 없습니다. 응답 미리보기 ↓")
-        print(raw_result)
-        return
-
-    print(f"\ud83d\udcc4 \ubb38서 수: {len(documents)}개")
-
-    print("\n\ud83d\udcca 기존 벡터 스토어에 연결 중...")
-    vector_store = create_vector_store()
-
-    print("\ud83e\udde0 \ubb38서들을 벡터 스토어에 추가 중...")
-    vector_store.add_documents(documents)
-
-    print("\u2705 한울타리 정책 정보가 벡터 DB에 성공적으로 업데이트되었습니다!")
-
+    print(f"✅ 총 {len(parsed.programs)}개의 한국어 프로그램 정보를 저장했습니다.")
+    print(f"📁 저장 경로: {save_path}")
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(fetch_hanultari_data())

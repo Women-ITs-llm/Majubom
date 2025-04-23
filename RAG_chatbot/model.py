@@ -11,13 +11,13 @@ from langchain_core.messages import HumanMessage
 
 def create_llm():
     """LLM 모델 생성"""
-    load_dotenv(override=True)
+    load_dotenv(dotenv_path="./.env")
     
     return ChatOpenAI(
-        model_name="deepseek/deepseek-chat",
+        model_name="gpt-4.1-mini",
         temperature=0,
-        openai_api_base="https://openrouter.ai/api/v1",
-        openai_api_key=os.getenv("OPENROUTER_API_KEY")
+        # openai_api_base="https://openrouter.ai/api/v1",
+        openai_api_key=os.getenv("OPENAI_API_KEY")
     )
 
 def create_qa_prompt():
@@ -35,8 +35,14 @@ def create_qa_prompt():
     5. 비자 갱신, 체류 변경, 국적 취득 관련 법률 설명
     6. 결혼, 이혼, 양육, 가정폭력 관련 법률 및 대응 정보
     7. 사용자의 거주 지역 기반으로 센터/시설 정보를 우선 제공
+    8. 다문화 가정 지원 프로그램 정보를 제공
 
     답변은 친절하고 쉽게 이해되도록 작성하며, 사용자의 언어 수준을 고려해 간결하게 안내합니다.
+    다문화 가정 지원 프로그램은 거주 지역이 아니더라도 제공합니다.
+    다문화 가정 지원 프로그램은 신청 기간이 지났을 경우 제공하지 않습니다.
+    사용자에게 친절하고 공감하는 말투를 사용하세요.
+    사용자의 상황을 고려해 추가로 궁금할 만한 것을 되물어보세요.
+    단정 짓기보단 제안을 하듯 부드럽게 전달하세요. 예) "혹시 이런 정보도 필요하실까요?", "다른 지역에 사시는 경우도 알려주시면 더 도와드릴 수 있어요."
     정확한 정보가 없는 경우에는 모른다고 정중히 답변합니다.
 
     ----------------
@@ -90,11 +96,11 @@ class RAGModel:
             
             # 번역용 별도 LLM 객체 생성
             self.translation_llm = ChatOpenAI(
-                model_name="deepseek/deepseek-chat",
-                temperature=0,
-                openai_api_base="https://openrouter.ai/api/v1",
-                openai_api_key=os.getenv("OPENROUTER_API_KEY")
-            )
+            model_name="gpt-4.1-mini",
+            temperature=0,
+            # openai_api_base="https://openrouter.ai/api/v1",
+            openai_api_key=os.getenv("OPENAI_API_KEY")
+        )
             
             self.chat_history = []
             self.initialized = True
@@ -126,6 +132,17 @@ class RAGModel:
         # 응답 생성
         response = self.qa_chain.invoke(augmented_query)
         answer = response["result"]
+
+        # 🔽 사용된 문서 제목 추출
+        sources = response.get("source_documents", [])
+        titles = []
+        for doc in sources:
+            title = doc.metadata.get("title") or doc.metadata.get("source")
+            if title and title not in titles:
+                titles.append(title)
+        if titles:
+            source_text = "\n\n📚 참고한 문서:\n" + "\n".join(f"- {t}" for t in titles)
+            answer += source_text
         
         # 선호 언어가 한국어가 아닌 경우 번역 프롬프트 추가
         if user_info and 'preferred_language' in user_info and user_info['preferred_language'] != "한국어":
