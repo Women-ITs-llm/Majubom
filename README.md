@@ -12,7 +12,7 @@
 
 | 이름   | 역할      | GitHub                                   |
 | ------ | --------- | ---------------------------------------- |
-| 강다한 | 추가 필요 | [추가필요](추가필요)                     |
+| 강다한 | 추가 필요 | [@DahanKang-94]](https://github.com/DahanKang-94)                     |
 | 김리주 | 추가 필요 | [@RijuKim](https://github.com/RijuKim)   |
 | 최민주 | 추가 필요 | [@soypark](https://github.com/Judy-Choi) |
 
