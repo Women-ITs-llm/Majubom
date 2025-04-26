@@ -19,11 +19,11 @@ def main():
     
     # 벡터 스토어 생성 및 법률 데이터 추가
     print("벡터 스토어 생성 및 법률 데이터 추가 중...")
-    vector_store = create_vector_store(texts, create_collection=True)
+    vector_store = create_vector_store(texts)
     
     # 다문화가족지원센터 데이터 로드
     print("다문화가족지원센터 데이터 로딩 중...")
-    center_pdf = "data/다문화가족지원센터 현황(공공데이터).pdf"
+    center_pdf = "data/다문화가족지원센터현황(공공데이터).pdf"
     center_docs = load_center_data(center_pdf)
 
     # 한울타리 JSON 데이터 로드

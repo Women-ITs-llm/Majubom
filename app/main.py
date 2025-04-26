@@ -1,4 +1,6 @@
 import streamlit as st
+st.set_page_config(page_title="다문화가족 상담 도우미 마주봄👩‍💼", layout="centered")  # 반드시 첫 줄에 위치
+
 import sys
 import os
 from PIL import Image
@@ -9,6 +11,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from RAG_chatbot.model import RAGModel
 from app.components.user_info import UserInfoForm
+from app.components.user_detail import UserDetailForm
 from app.components.chat_ui import ChatInterface
 
 def init_session_state():
@@ -38,19 +41,30 @@ def render_logo_and_title():
 
 def main():
     init_session_state()
-
-    st.set_page_config(page_title="다문화가족 상담 도우미 마주봄👩‍💼", layout="centered")
-
     render_logo_and_title()
 
-    if st.session_state.user_info is None:
+    step = st.session_state.get("step", "basic")
+
+    if step == "basic":
         UserInfoForm().display()
-    else:
-        ChatInterface(
-            rag_model=st.session_state.rag_model,
-            user_info=st.session_state.user_info,
-            chat_history=st.session_state.chat_history
-        ).display()
+
+    elif step == "detail":
+        if st.session_state.user_info:
+            UserDetailForm().display()
+        else:
+            st.warning("기본 정보를 먼저 입력해주세요.")
+            st.session_state.step = "basic"
+
+    elif step == "chat":
+        if st.session_state.user_info:
+            ChatInterface(
+                rag_model=st.session_state.rag_model,
+                user_info=st.session_state.user_info,
+                chat_history=st.session_state.chat_history
+            ).display()
+        else:
+            st.warning("기본 정보를 먼저 입력해주세요.")
+            st.session_state.step = "basic"
 
 if __name__ == "__main__":
     main()
