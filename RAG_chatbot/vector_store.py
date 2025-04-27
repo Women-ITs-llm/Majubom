@@ -45,7 +45,7 @@ def create_vector_store(documents=None, collection_name="laws_db"):
     
     return vector_store
 
-def create_retriever(vector_store, k=3, fetch_k=10):
+def create_retriever(vector_store, k=5, fetch_k=10):
     """검색기 생성"""
     return vector_store.as_retriever(search_kwargs={
         "k": k,         # 최종 반환할 문서 개수
