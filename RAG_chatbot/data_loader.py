@@ -98,6 +98,7 @@ def load_korean_education_data(page: int = 1, per_page: int = 1000) -> list[Docu
 
     for item in data_list:
         contact_numbers = [item.get(f"연락처{i}") for i in range(1, 5) if item.get(f"연락처{i}")]
+        contact_numbers.extend([item.get("연락처")])
         content = "\n".join([
             "결혼이민자 대상 한국어 교육기관 정보",
             f"시도: {item.get('시도') or '시도 정보 없음'}",
