@@ -2,6 +2,7 @@
 import os
 import json
 import glob
+import requests
 from langchain_community.document_loaders import PyMuPDFLoader
 from langchain_core.documents import Document
 from langchain.text_splitter import CharacterTextSplitter
@@ -54,7 +55,6 @@ def load_hanultari_json(json_path: str) -> list[Document]:
 
     return documents
 
-
 def load_all_hanultari_jsons(folder_path: str) -> list[Document]:
     """폴더 내 모든 한울타리 JSON 파일을 Document 리스트로 로딩"""
     json_files = glob.glob(f"{folder_path}/hanultari_*.json")
@@ -65,6 +65,53 @@ def load_all_hanultari_jsons(folder_path: str) -> list[Document]:
         all_docs.extend(docs)
 
     return all_docs
+
+def load_korean_education_data_by_api(page: int = 1, per_page: int = 1000) -> dict:
+    """여성가족부 결혼이민자 대상 한국어 교육기관 정보를 API로 가져온다."""
+    
+    # 여성가족부_결혼이민자 대상 한국어교육 운영기관 현황 (2024년)
+    # https://www.data.go.kr/iim/api/selectAPIAcountView.do#layer-api-guide
+    url = "https://api.odcloud.kr/api/3077037/v1/uddi:de366691-6657-4b87-b324-f1bbbf01c0cb"
+    service_key = os.getenv("DATA_API_KEY")
+    
+    params = {
+        "page": page,
+        "perPage": per_page,
+        "serviceKey": service_key
+    }
+
+    headers = {
+        "accept": "*/*"
+    }
+    
+    response = requests.get(url, params=params, headers=headers)
+    response.raise_for_status()  # 실패하면 예외 발생
+
+    return response.json()
+
+def load_korean_education_data(page: int = 1, per_page: int = 1000) -> list[Document]:
+    """여성가족부 결혼이민자 대상 한국어 교육기관 정보 API를 호출하고, VectorDB에 저장한다."""
+    # 기관 정보는 data 키 - [{기관정보..}] 형태로 리턴됨.
+    result = load_korean_education_data_by_api(page=page, per_page=per_page)
+    data_list = result.get('data', [])
+    documents = []
+
+    for item in data_list:
+        contact_numbers = [item.get(f"연락처{i}") for i in range(1, 5) if item.get(f"연락처{i}")]
+        content = "\n".join([
+            "결혼이민자 대상 한국어 교육기관 정보",
+            f"시도: {item.get('시도') or '시도 정보 없음'}",
+            f"운영기관명: {item.get('운영기관명')}",
+            f"주소: {item.get('주소') or '주소 정보 없음'}",
+            f"연락처: {', '.join(contact_numbers) or '연락처 정보 없음'}"
+        ])
+        documents.append(Document(page_content=content, metadata={
+            "source": "여성가족부 결혼이민자 대상 한국어교육 운영기관 현황 (공공데이터포털 제공)",
+            "type": "API to Vector DB",
+            "category": "korean_language_education"
+        }))
+
+    return documents
 
 def create_text_splitter(chunk_size=1000, chunk_overlap=100):
     """텍스트 분할기 생성"""
