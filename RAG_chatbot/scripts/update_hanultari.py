@@ -31,7 +31,7 @@ controller = Controller(output_model=KoreanPrograms)
 async def fetch_hanultari_data():
     agent = Agent(
         task="""
-        Visit https://mcfamily.or.kr/programs/korean?page=1.
+        Visit https://mcfamily.or.kr/programs/family?page=2.
         Extract all multicultural family support programs.
         Each object should include: "title", "summary", "location", and "dates".
         Return only a valid JSON object with the key "programs".
@@ -63,7 +63,7 @@ async def fetch_hanultari_data():
     with open(save_path, "w", encoding="utf-8") as f:
         json.dump(parsed.dict(), f, ensure_ascii=False, indent=2)
 
-    print(f"✅ 총 {len(parsed.programs)}개의 한국어 프로그램 정보를 저장했습니다.")
+    print(f"✅ 총 {len(parsed.programs)}개의 프로그램 정보를 저장했습니다.")
     print(f"📁 저장 경로: {save_path}")
 
 if __name__ == "__main__":

@@ -15,6 +15,7 @@ def main():
     # 법률 PDF 로드 및 분할
     print("법률 PDF 파일 로딩 중...")
     docs = load_pdfs("data/")
+    print(docs)
     texts = split_documents(docs, text_splitter)
     
     # 벡터 스토어 생성 및 법률 데이터 추가
