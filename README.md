@@ -14,7 +14,7 @@
 | ------ | --------- | ------------------------------------------------ |
 | 강다한 | 추가 필요 | [@DahanKang-94](https://github.com/DahanKang-94) |
 | 김리주 | 추가 필요 | [@RijuKim](https://github.com/RijuKim)           |
-| 최민주 | 추가 필요 | [@soypark](https://github.com/Judy-Choi)         |
+| 최민주 | 추가 필요 | [@Judy-Choi](https://github.com/Judy-Choi)         |
 
 ---
 
