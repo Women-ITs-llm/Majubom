@@ -2,6 +2,7 @@ from data_loader import (
     load_pdfs,
     load_center_data,
     load_all_hanultari_jsons,
+    load_korean_education_data,
     create_text_splitter,
     split_documents,
 )
@@ -33,6 +34,13 @@ def main():
     hanultari_chunks = split_documents(hanultari_docs, text_splitter)
     vector_store.add_documents(hanultari_chunks)
     print(f"한울타리 프로그램 데이터 {len(hanultari_chunks)}개 청크가 추가되었습니다.")
+
+    # 결혼이민자 대상 한국어교육 운영기관 API 데이터 로드
+    print("결혼이민자 대상 한국어교육 운영기관 데이터 로딩 중...")
+    korean_education_docs = load_korean_education_data(page=1, per_page=1000)
+    korean_education_chunks = split_documents(korean_education_docs, text_splitter)
+    vector_store.add_documents(korean_education_chunks)
+    print(f"결혼이민자 대상 한국어교육 운영기관 데이터 {len(korean_education_chunks)}개 청크가 추가되었습니다.")
     
     # 다문화가족지원센터 데이터 분할 및 추가
     center_chunks = split_documents(center_docs, text_splitter)
