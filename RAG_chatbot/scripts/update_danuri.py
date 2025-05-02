@@ -31,10 +31,12 @@ controller = Controller(output_model=KoreanPrograms)
 async def fetch_hanultari_data():
     agent = Agent(
         task="""
-        Visit https://mcfamily.or.kr/programs/family?page=2.
-        Extract all multicultural family support programs.
-        Each object should include: "title", "summary", "location", and "dates".
+        Visit https://www.liveinkorea.kr/portal/KOR/main/main.do.
+        Click "+" button(a.box_board_02_focus1) at the section "가족센터정보" which is box no.38
+        Extract 10 programs, Each object should include: "title", "location", and "end date".
         Return only a valid JSON object with the key "programs".
+        Move next page and extract program to page 5.
+        Once the JSON is returned, stop immediately.
         """,
         controller=controller,
         llm=ChatOpenAI(
@@ -59,7 +61,7 @@ async def fetch_hanultari_data():
 
     # JSON 저장
     os.makedirs("RAG_chatbot/data", exist_ok=True)
-    save_path = f"RAG_chatbot/data/hanultari_{date.today()}.json"
+    save_path = f"RAG_chatbot/data/danuri_{date.today()}.json"
     with open(save_path, "w", encoding="utf-8") as f:
         json.dump(parsed.dict(), f, ensure_ascii=False, indent=2)
 

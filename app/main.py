@@ -23,7 +23,7 @@ def init_session_state():
         st.session_state.chat_history = []
 
 def render_logo_and_title():
-    logo_path = os.path.join(os.path.dirname(__file__), "static/images/logo.png")
+    logo_path = os.path.join(os.path.dirname(__file__), "static/images/majubom_logo.webp")
     if os.path.exists(logo_path):
         with open(logo_path, "rb") as f:
             logo_base64 = b64encode(f.read()).decode()

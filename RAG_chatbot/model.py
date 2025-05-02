@@ -20,14 +20,42 @@ def create_llm():
         openai_api_key=os.getenv("OPENAI_API_KEY")
     )
 
-def create_qa_prompt():
-    """QA 프롬프트 템플릿 생성"""
-    system_template = """
-    당신은 '마주봄'이라는 이름의 AI 챗봇입니다. 당신은 다문화 가정에게 복지, 정책, 법률 정보를 쉽고 정확하게 전달하는 다국어 AI 상담사입니다.
+def create_qa_prompt(user_info=None, chat_history=None):
+    """QA 프롬프트 템플릿 생성 (사용자 정보 + 이전 대화 포함)"""
 
+    # 사용자 정보 구성
+    user_context = ""
+    if user_info:
+        parts = []
+        if user_info.get("residence_area"):
+            parts.append(f"거주 지역: {user_info['residence_area']}")
+        if user_info.get("visa_status"):
+            parts.append(f"체류 자격: {user_info['visa_status']}")
+        if user_info.get("family_members"):
+            parts.append(f"가족 구성: {', '.join(user_info['family_members'])}")
+        if user_info.get("interests"):
+            parts.append(f"관심 분야: {', '.join(user_info['interests'])}")
+        if parts:
+            user_context = "\n\n[사용자 정보]\n" + "\n".join(parts)
+
+    # 이전 대화 기록 구성
+    history_context = ""
+    if chat_history:
+        formatted_history = "\n".join([f"Q: {q}\nA: {a}" for q, a in chat_history[-5:]])
+        history_context = f"\n\n[이전 대화]\n{formatted_history}"
+
+    # System 프롬프트
+    system_template = f"""
+    당신은 '마주봄'이라는 AI 상담사입니다. 다문화 가정에게 복지, 정책, 법률 정보를 쉽고 친절하게 제공합니다.
+
+    {user_context}
+    {history_context}
+
+    사용자의 질문에 대한 답변을 최우선으로 하며, 필요시 이전 대화를 참고하여 중복되지 않게 답변하세요.
     사용자의 체류 자격, 가족 구성, 거주 지역 등의 정보를 기반으로 맞춤형 답변을 제공합니다.
+    반드시 질문 이외의 사항을 답변할 경우 추가 제공된 답변임을 알려줍니다.
 
-    당신이 제공할 수 있는 기능은 다음과 같습니다:
+    당신이 제공할 수 있는 카테고리는 다음과 같습니다:
     1. 체류 상태 및 가족 구성에 따른 복지/지원 정책 추천
     2. 정책 신청 절차를 단계별로 안내하고, 필요한 서류 목록을 제시
     3. 신청 가능한 온라인 시스템 안내
@@ -36,17 +64,19 @@ def create_qa_prompt():
     6. 결혼, 이혼, 양육, 가정폭력 관련 법률 및 대응 정보
     7. 사용자의 거주 지역 기반으로 센터/시설 정보를 우선 제공
     8. 다문화 가정 지원 프로그램 정보를 제공
+    9. 기타 한국생활 관련 다문화 정보
 
     답변은 친절하고 쉽게 이해되도록 작성하며, 사용자의 언어 수준을 고려해 간결하게 안내합니다.
-    다문화 가정 지원 프로그램은 거주 지역이 아니더라도 제공합니다.
-    다문화 가정 지원 프로그램은 신청 기간이 지났을 경우 제공하지 않습니다.
+    다문화 가정 지원 프로그램은 거주 지역이 아니더라도 제공하면서, 다른 지역임을 알려주세요.
+    다만 다문화 가정 지원 프로그램은 신청 기간이 지났을 경우 제공하지 않습니다.
+    답변에 다른 웹사이트나 전화번호 등 사용자가 추가로 확인할 수 있는 정보가 있다면 제공해주세요.
     사용자에게 친절하고 공감하는 말투를 사용하세요.
     사용자의 상황을 고려해 추가로 궁금할 만한 것을 되물어보세요.
     단정 짓기보단 제안을 하듯 부드럽게 전달하세요. 예) "혹시 이런 정보도 필요하실까요?", "다른 지역에 사시는 경우도 알려주시면 더 도와드릴 수 있어요."
     정확한 정보가 없는 경우에는 모른다고 정중히 답변합니다.
 
     ----------------
-    {context}
+    {{context}}
     """
 
     human_template = "{question}"
@@ -58,10 +88,10 @@ def create_qa_prompt():
 
     return ChatPromptTemplate.from_messages(messages)
 
-def create_qa_chain(retriever):
-    """QA 체인 생성"""
+
+def create_qa_chain(retriever, user_info=None):
     llm = create_llm()
-    qa_prompt = create_qa_prompt()
+    qa_prompt = create_qa_prompt(user_info=user_info)
     
     return RetrievalQA.from_chain_type(
         llm=llm,
@@ -109,25 +139,19 @@ class RAGModel:
         # 사용자 정보를 기반으로 쿼리 증강
         augmented_query = f"{query} {user_info['residence_area']} 지역"
         if user_info:
-            user_context_parts = []
+            parts = []
             if user_info.get("residence_area"):
-                user_context_parts.append(f"{user_info['residence_area']} 지역에 거주")
+                parts.append(f"{user_info['residence_area']} 지역에 거주")
             if user_info.get("visa_status"):
-                user_context_parts.append(f"{user_info['visa_status']} 체류자격")
+                parts.append(f"{user_info['visa_status']} 체류자격")
             if user_info.get("family_members"):
-                user_context_parts.append(f"가족 구성: {', '.join(user_info['family_members'])}")
-            user_context_str = ", ".join(user_context_parts)
-            augmented_query = f"{user_context_str}인 사용자가 질문: {query}"
-            user_context_str = ", ".join(user_context_parts)
-            augmented_query = f"{user_context_str}인 사용자가 질문: {query}"
-        # 지역 정보 활용
-        if user_info and 'residence_area' in user_info and user_info['residence_area']:
-            augmented_query = f"{query} {user_info['residence_area']} 지역"
-        
-        # 관심 분야 반영
-        if user_info and 'interests' in user_info and user_info['interests']:
-            interests_str = ", ".join(user_info['interests'])
-            augmented_query = f"{augmented_query} (관심 분야: {interests_str})"
+                parts.append(f"가족 구성: {', '.join(user_info['family_members'])}")
+            if parts:
+                augmented_query = f"{', '.join(parts)}인 사용자가 질문: {query}"
+            
+            if user_info.get('interests'):
+                interests_str = ", ".join(user_info['interests'])
+                augmented_query += f" (관심 분야: {interests_str})"
         
         # 응답 생성
         response = self.qa_chain.invoke(augmented_query)
@@ -144,20 +168,29 @@ class RAGModel:
             source_text = "\n\n📚 참고한 문서:\n" + "\n".join(f"- {t}" for t in titles)
             answer += source_text
         
-        # 선호 언어가 한국어가 아닌 경우 번역 프롬프트 추가
-        if user_info and 'preferred_language' in user_info and user_info['preferred_language'] != "한국어":
-            target_lang = user_info['preferred_language']
-            
-            try:
-                # 번역된 텍스트 생성
-                translated_answer = self._translate_text(answer, target_lang)
-                
-                # 한국어와 번역된 언어 모두 제공
-                answer = f"{translated_answer}\n\n---\n[한국어 원문]\n{answer}"
-            except Exception as e:
-                # 번역 실패 시 원문만 반환
-                print(f"번역 오류: {e}")
-        
+            # ✅ 번역 로직 추가
+        if user_info:
+            preferred_lang = user_info.get('preferred_language', '한국어')
+            if preferred_lang != "한국어":
+                lang_map = {
+                    "영어": "English",
+                    "중국어": "Chinese",
+                    "베트남어": "Vietnamese",
+                    "타갈로그어": "Tagalog",
+                    "우즈베크어": "Uzbek",
+                    "태국어": "Thai",
+                    "몽골어": "Mongolian",
+                    "태국어": "Thai",
+                    "우즈베크어": "Uzbek"
+                }
+                target_lang = lang_map.get(preferred_lang, "English")
+
+                try:
+                    translated = self._translate_text(answer, target_lang)
+                    answer = f"{translated}\n\n---\n[한국어 원문]\n{answer}"
+                except Exception as e:
+                    print(f"번역 오류: {e}")
+
         self.chat_history.append((query, answer))
         return answer
     

@@ -33,7 +33,7 @@ def load_center_data(center_pdf):
 import glob
 
 def load_hanultari_json(json_path: str) -> list[Document]:
-    """한울타리 JSON 파일을 Document 리스트로 변환"""
+    """JSON 파일을 Document 리스트로 변환"""
     with open(json_path, "r", encoding="utf-8") as f:
         data = json.load(f)
 
@@ -45,7 +45,7 @@ def load_hanultari_json(json_path: str) -> list[Document]:
             f"Title: {item.get('title')}",
             f"Summary: {item.get('summary') or '정보 없음'}",
             f"Location: {item.get('location')}",
-            f"Date: {item.get('dates') or item.get('date') or '날짜 정보 없음'}"
+            f"Date: {item.get('dates') or item.get('date') or item.get('end_date') or '날짜 정보 없음'}"
         ])
         documents.append(Document(page_content=content, metadata={
             "source": os.path.basename(json_path),
@@ -57,7 +57,7 @@ def load_hanultari_json(json_path: str) -> list[Document]:
 
 def load_all_hanultari_jsons(folder_path: str) -> list[Document]:
     """폴더 내 모든 한울타리 JSON 파일을 Document 리스트로 로딩"""
-    json_files = glob.glob(f"{folder_path}/hanultari_*.json")
+    json_files = glob.glob(f"{folder_path}/*.json")
     all_docs = []
 
     for path in json_files:

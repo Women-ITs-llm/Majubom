@@ -1,20 +1,20 @@
 # Majubom
 
-다문화 가정의 복잡한 복지·정책·법률을 쉽고 친절하게 안내하는 다국어 챗봇입니다.
+이주여성의 복잡한 복지·정책·법률을 쉽고 친절하게 안내하는 **다국어 챗봇**입니다.
 
 ## 👩‍💻 프로젝트 소개
 
-통계청 인구총조사에 의하면 다문화가구는 꾸준히 증가하는 추세이나, 다문화 가정은 언어 장벽, 정보 단절 등으로 인해 한국 사회에서 제공하는 복지 및 법률 지원을 제대로 받지 못하는 경우가 많습니다. 본 프로젝트는 RAG(Retrieval-Augmented Generation) 기반 LLM(Large Language Model) 챗봇을 개발하여 다문화가정과 관련된 복잡한 정책과 법률 정보를 다국어로 쉽게 안내하는 AI 도우미 서비스를 제공합니다. 해당 챗봇은 정보 검색 뿐만 아니라, 검색된 정책의 단계별 신청 가이드와 문서 번역, 작성 지원 기능까지 제공하여 사용자의 편의성을 확대합니다. 이를 통해 다문화 가정의 정보 접근성을 높이고 사회 통합을 촉진하는 것을 목표로 합니다.
+통계청 인구총조사에 의하면 다문화가구는 꾸준히 증가하는 추세이나, 다문화 가정은 언어 장벽, 정보 단절 등으로 인해 한국 사회에서 제공하는 복지 및 법률 지원을 제대로 받지 못하는 경우가 많습니다. 본 프로젝트는 **RAG(Retrieval-Augmented Generation)** 기반 **LLM(Large Language Model) 챗봇**을 개발하여 다문화가정과 관련된 복잡한 정책과 법률 정보를 다국어로 쉽게 안내하는 AI 도우미 서비스를 제공합니다. 해당 챗봇은 정보 검색 뿐만 아니라, 검색된 정책의 단계별 신청 가이드와 문서 번역, 작성 지원 기능까지 제공하여 사용자의 편의성을 확대합니다. 이를 통해 다문화 가정의 정보 접근성을 높이고 사회 통합을 촉진하는 것을 목표로 합니다.
 
 ---
 
 ## 👥 프로젝트 팀
 
-| 이름   | 역할      | GitHub                                   |
-| ------ | --------- | ---------------------------------------- |
-| 강다한 | 추가 필요 | [@DahanKang-94]](https://github.com/DahanKang-94)                     |
-| 김리주 | 추가 필요 | [@RijuKim](https://github.com/RijuKim)   |
-| 최민주 | 추가 필요 | [@soypark](https://github.com/Judy-Choi) |
+| 이름   | 역할      | GitHub                                           |
+| ------ | --------- | ------------------------------------------------ |
+| 강다한 | 추가 필요 | [@DahanKang-94](https://github.com/DahanKang-94) |
+| 김리주 | 추가 필요 | [@RijuKim](https://github.com/RijuKim)           |
+| 최민주 | 추가 필요 | [@soypark](https://github.com/Judy-Choi)         |
 
 ---
 
@@ -41,3 +41,68 @@
 | 기능             | 설명                                                                                                                                                | 우선 순위 |
 | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
 | 사용자 조건 선택 | 국적, 나이, 한국 거주 기간, 가족 구성, 한국어 능력, 거주 지역, 직업 상태, 관심사 카테고리(자녀 양육 지원, 한국어 학습, 취업 기회, 의료 서비스) 선택 | 높음      |
+
+---
+
+## 🚀 실행 방법
+
+### 1️⃣ 환경 설정
+
+프로젝트 루트 경로에 **`.env` 파일**을 생성하고 아래 내용을 추가하세요.
+
+```dotenv
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=majubom_db
+DB_USER=postgres
+DB_PASSWORD=postgres
+
+OPENROUTER_API_KEY=your_openrouter_api_key
+OPENAI_API_KEY=your_openai_api_key
+DEEPSEEK_API_KEY=your_deepseek_api_key
+```
+
+### 2️⃣ 패키지 설치
+
+Python 가상환경을 활성화한 후, 필요한 패키지를 설치합니다.
+
+```
+pip install -r requirements.txt
+```
+
+### 3️⃣ 데이터베이스 설정 (PostgreSQL)
+
+로컬 환경의 postgresql를 사용할 경우 extension을 생성해줍니다.
+
+```
+CREATE DATABASE majubom_db;
+\c majubom_db
+CREATE EXTENSION IF NOT EXISTS vector;
+```
+
+### 4️⃣ 챗봇 실행
+
+Streamlit으로 챗봇을 실행합니다.
+
+```
+streamlit run app/main.py
+```
+
+브라우저에서 접속:
+
+```
+http://localhost:8501
+```
+
+## ⚙️ 환경 변수 목록
+
+| 변수명             | 설명                     |
+| ------------------ | ------------------------ |
+| DB_HOST            | 데이터베이스 호스트 주소 |
+| DB_PORT            | 데이터베이스 포트        |
+| DB_NAME            | 데이터베이스 이름        |
+| DB_USER            | 데이터베이스 사용자명    |
+| DB_PASSWORD        | 데이터베이스 비밀번호    |
+| OPENROUTER_API_KEY | OpenRouter API 키        |
+| OPENAI_API_KEY     | OpenAI API 키            |
+| DEEPSEEK_API_KEY   | DeepSeek API 키          |
