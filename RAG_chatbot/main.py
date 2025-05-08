@@ -52,7 +52,7 @@ def main():
     translator_docs = load_translator_data(page=1, per_page=1000)
     translator_chunks = split_documents(translator_docs, text_splitter)
     vector_store.add_documents(translator_chunks)
-    print(f"한국건강가정진흥원_전국 다문화가족지원센터 통번역 지원사 배치현황 데이터 {len(korean_education_chunks)}개 청크가 추가되었습니다.")
+    print(f"한국건강가정진흥원_전국 다문화가족지원센터 통번역 지원사 배치현황 데이터 {len(translator_chunks)}개 청크가 추가되었습니다.")
     
     # 다문화가족지원센터 데이터 분할 및 추가
     center_chunks = split_documents(center_docs, text_splitter)
