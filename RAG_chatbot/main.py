@@ -4,6 +4,7 @@ from data_loader import (
     load_all_hanultari_jsons,
     load_korean_education_data,
     load_translator_data,
+    load_sunflower_center_data,
     create_text_splitter,
     split_documents,
 )
@@ -13,7 +14,7 @@ from model import create_qa_chain
 def main():
     # 텍스트 분할기 생성
     text_splitter = create_text_splitter()
-    
+
     # 법률 PDF 로드 및 분할
     print("법률 PDF 파일 로딩 중...")
     docs = load_pdfs("data/")
@@ -52,7 +53,16 @@ def main():
     translator_docs = load_translator_data(page=1, per_page=1000)
     translator_chunks = split_documents(translator_docs, text_splitter)
     vector_store.add_documents(translator_chunks)
-    print(f"한국건강가정진흥원_전국 다문화가족지원센터 통번역 지원사 배치현황 데이터 {len(korean_education_chunks)}개 청크가 추가되었습니다.")
+    print(f"한국건강가정진흥원_전국 다문화가족지원센터 통번역 지원사 배치현황 데이터 {len(translator_chunks)}개 청크가 추가되었습니다.")
+
+    # 여성가족부_해바라기센터 API 데이터 로드
+    # 성폭력 피해자 지원을 전담하는 해바라기센터의 POI시설정보(도로명주소, 지번주소, 위도, 경도, 전화번호 등) 현황의 사회복지 정보서비스를 제공합니다.
+    # https://www.data.go.kr/data/15109785/openapi.do#tab_layer_detail_function
+    print("여성가족부_해바라기센터 데이터 로딩 중...")
+    sunflower_docs = load_sunflower_center_data(page=1, per_page=100)
+    sunflower_chunks = split_documents(sunflower_docs, text_splitter)
+    vector_store.add_documents(sunflower_chunks)
+    print(f"여성가족부_해바라기센터 데이터 {len(sunflower_chunks)}개 청크가 추가되었습니다.")
     
     # 다문화가족지원센터 데이터 분할 및 추가
     center_chunks = split_documents(center_docs, text_splitter)
