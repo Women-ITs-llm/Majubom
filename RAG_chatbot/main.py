@@ -49,9 +49,9 @@ def main():
     vector_store.add_documents(korean_education_chunks)
     print(f"{data} {len(korean_education_chunks)}개 청크가 추가되었습니다.")
 
-    # # 한국건강가정진흥원_전국 다문화가족지원센터 통번역 지원사 배치현황 API 데이터 로드
-    # # 한국건강가정진흥원_전국 다문화가족지원센터 통번역 지원사 배치현황 (2024년)
-    # # https://www.data.go.kr/tcs/dss/selectFileDataDetailView.do?publicDataPk=3081602#tab-layer-openapi
+    # 한국건강가정진흥원_전국 다문화가족지원센터 통번역 지원사 배치현황 API 데이터 로드
+    # 한국건강가정진흥원_전국 다문화가족지원센터 통번역 지원사 배치현황 (2024년)
+    # https://www.data.go.kr/tcs/dss/selectFileDataDetailView.do?publicDataPk=3081602#tab-layer-openapi
     data = "한국건강가정진흥원_전국 다문화가족지원센터 통번역 지원사 배치현황"
     print(f"{data} 로딩 중...")
     translator_data = load_translator_data(page=1, per_page=1000)
