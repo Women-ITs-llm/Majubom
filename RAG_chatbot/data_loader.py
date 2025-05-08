@@ -107,60 +107,16 @@ def load_korean_education_data(page: int = 1, per_page: int = 1000) -> list[Docu
     korean_education_url = "https://api.odcloud.kr/api/3077037/v1/uddi:de366691-6657-4b87-b324-f1bbbf01c0cb"
     result = load_data_by_api(url=korean_education_url, page=page, per_page=per_page)
     data_list = result.get('data', [])
-    documents = []
 
-    for item in data_list:
-        contact_numbers = [item.get(f"연락처{i}") for i in range(1, 5) if item.get(f"연락처{i}")]
-        contact_numbers.extend([item.get("연락처")])
-        content = "\n".join([
-            "결혼이민자 대상 한국어 교육기관 정보",
-            f"시도: {item.get('시도') or '시도 정보 없음'}",
-            f"운영기관명: {item.get('운영기관명')}",
-            f"주소: {item.get('주소') or '주소 정보 없음'}",
-            f"연락처: {', '.join(contact_numbers) or '연락처 정보 없음'}"
-        ])
-        documents.append(Document(page_content=content, metadata={
-            "source": "여성가족부 결혼이민자 대상 한국어교육 운영기관 현황 (공공데이터포털 제공)",
-            "type": "API to Vector DB",
-            "category": "korean_language_education"
-        }))
-
-    return documents
+    return data_list
 
 def load_translator_data(page: int = 1, per_page: int = 1000) -> list[Document]:
     """한국건강가정진흥원_전국 다문화가족지원센터 통번역 지원사 배치현황 정보 API를 호출하고, VectorDB에 저장한다."""
     translator_url = "https://api.odcloud.kr/api/3081602/v1/uddi:3edbb122-3a1c-420d-992a-855bd0a961aa"
     result = load_data_by_api(url=translator_url, page=page, per_page=per_page)
     data_list = result.get('data', [])
-    documents = []
-
-    for item in data_list:
-        content_lines = [
-            "전국 다문화가족지원센터 통번역 지원사 배치현황 정보",
-            f"연번: {item.get('연번') or '연번 정보 없음'}",
-            f"시도명: {item.get('시도명') or '시도 정보 없음'}",
-            f"센터명: {item.get('센터명') or '센터 정보 없음'}"
-        ]
-
-        # 언어별 인원 추가 (0이 아닌 경우만)
-        languages = [
-            "네팔어", "러시아어", "몽골어", "베트남어", "우즈베크어",
-            "일본어", "중국어", "캄보디아어", "태국어", "필리핀어"
-        ]
-
-        for lang in languages:
-            count = item.get(lang)
-            if count and count > 0:
-                content_lines.append(f"{lang}: {count}명")
-
-        content = "\n".join(content_lines)
-        documents.append(Document(page_content=content, metadata={
-            "source": "한국건강가정진흥원_전국 다문화가족지원센터 통번역 지원사 배치현황 (공공데이터포털 제공)",
-            "type": "API to Vector DB",
-            "category": "interpreter_translator_info"
-        }))
-
-    return documents
+    
+    return data_list
 
 def load_sunflower_center_data(page: int = 1, per_page: int = 100) -> list[Document]:
     """여성가족부 해바라기센터 정보 API를 호출하고, VectorDB에 저장한다."""
@@ -176,7 +132,7 @@ def load_sunflower_center_data(page: int = 1, per_page: int = 100) -> list[Docum
             contact_number = format_korean_phone(contact_number)
 
         content = "\n".join([
-            "여성가족부 해바라기센터 정보",
+            "여성가족부 해바라기센터 정보 (365일 24시간 성폭력, 가정폭력, 성매매, 교제폭력, 스토킹 피해자에게 통합적인 서비스를 제공하는 기관)",
             f"센터명: {item.get('cnterNm') or '센터명 정보 없음'}",
             f"주소: {item.get('roadNmAddr') or item.get('lotnoAddr') or '주소 정보 없음'}",
             f"연락처: {contact_number}",
@@ -218,3 +174,28 @@ def split_documents(docs, text_splitter=None):
         text_splitter = create_text_splitter()
     
     return text_splitter.split_documents(docs)
+
+def split_csv(items, data, max_rows=10):
+    if not items:
+        return []
+
+    header = list(items[0].keys())
+    documents = []
+
+    for i in range(0, len(items), max_rows):
+        chunk_rows = items[i:i + max_rows]
+        lines = [", ".join(header)]  # 헤더
+        for row in chunk_rows:
+            lines.append(", ".join(str(row.get(col, "")) for col in header))
+        chunk_text = "\n".join(lines)
+
+        doc = Document(
+            page_content= data + '\n' + chunk_text,
+            metadata={
+                "source": data + " (공공데이터포털 제공)",
+                "type": "API to Vector DB",
+                "chunk_index": i // max_rows  # optional: 몇 번째 청크인지 추적 가능
+            }
+        )
+        documents.append(doc)
+    return documents
