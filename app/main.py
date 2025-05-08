@@ -1,5 +1,5 @@
 import streamlit as st
-st.set_page_config(page_title="다문화가족 상담 도우미 마주봄👩‍💼", layout="centered")  # 반드시 첫 줄에 위치
+st.set_page_config(page_title="이주여성을 위한 다국어 대화형 인공지능 서비스‘마주봄’👩‍💼", layout="centered")  # 반드시 첫 줄에 위치
 
 import sys
 import os
@@ -31,13 +31,13 @@ def render_logo_and_title():
             f"""
             <div style='text-align: center; margin-bottom: 30px;'>
                 <img src="data:image/png;base64,{logo_base64}" width="100"/>
-                <h1 style='font-size: 28px; margin-top: 15px;'>다문화가족 상담 도우미 마주봄👩‍💼</h1>
+                <h1 style='font-size: 28px; margin-top: 15px;'>이주여성을 위한 다국어 대화형 인공지능 서비스 마주봄👩‍💼</h1>
             </div>
             """,
             unsafe_allow_html=True
         )
     else:
-        st.title("다문화가족 상담 도우미 마주봄👩‍💼")
+        st.title("이주여성을 위한 다국어 대화형 인공지능 서비스 마주봄👩‍💼")
 
 def main():
     init_session_state()
