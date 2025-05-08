@@ -7,6 +7,7 @@ from data_loader import (
     load_sunflower_center_data,
     create_text_splitter,
     split_documents,
+    split_csv,
 )
 from vector_store import create_vector_store, create_retriever
 from model import create_qa_chain
@@ -14,11 +15,12 @@ from model import create_qa_chain
 def main():
     # 텍스트 분할기 생성
     text_splitter = create_text_splitter()
+    # vector_store = create_vector_store()
 
     # 법률 PDF 로드 및 분할
     print("법률 PDF 파일 로딩 중...")
     docs = load_pdfs("data/")
-    print(docs)
+    # print(docs)
     texts = split_documents(docs, text_splitter)
     
     # 벡터 스토어 생성 및 법률 데이터 추가
@@ -40,20 +42,22 @@ def main():
     # 결혼이민자 대상 한국어교육 운영기관 API 데이터 로드
     # 여성가족부_결혼이민자 대상 한국어교육 운영기관 현황 (2024년)
     # https://www.data.go.kr/iim/api/selectAPIAcountView.do#layer-api-guide
-    print("결혼이민자 대상 한국어교육 운영기관 데이터 로딩 중...")
-    korean_education_docs = load_korean_education_data(page=1, per_page=1000)
-    korean_education_chunks = split_documents(korean_education_docs, text_splitter)
+    data = "결혼이민자 대상 한국어교육 운영기관 정보"
+    print(f"{data} 로딩 중...")
+    korean_education_data = load_korean_education_data(page=1, per_page=1000)
+    korean_education_chunks = split_csv(korean_education_data, data, max_rows=10)
     vector_store.add_documents(korean_education_chunks)
-    print(f"결혼이민자 대상 한국어교육 운영기관 데이터 {len(korean_education_chunks)}개 청크가 추가되었습니다.")
+    print(f"{data} {len(korean_education_chunks)}개 청크가 추가되었습니다.")
 
     # 한국건강가정진흥원_전국 다문화가족지원센터 통번역 지원사 배치현황 API 데이터 로드
     # 한국건강가정진흥원_전국 다문화가족지원센터 통번역 지원사 배치현황 (2024년)
     # https://www.data.go.kr/tcs/dss/selectFileDataDetailView.do?publicDataPk=3081602#tab-layer-openapi
-    print("한국건강가정진흥원_전국 다문화가족지원센터 통번역 지원사 배치현황 데이터 로딩 중...")
-    translator_docs = load_translator_data(page=1, per_page=1000)
-    translator_chunks = split_documents(translator_docs, text_splitter)
+    data = "한국건강가정진흥원_전국 다문화가족지원센터 통번역 지원사 배치현황"
+    print(f"{data} 로딩 중...")
+    translator_data = load_translator_data(page=1, per_page=1000)
+    translator_chunks = split_csv(translator_data, data, max_rows=10)
     vector_store.add_documents(translator_chunks)
-    print(f"한국건강가정진흥원_전국 다문화가족지원센터 통번역 지원사 배치현황 데이터 {len(translator_chunks)}개 청크가 추가되었습니다.")
+    print(f"{data} {len(korean_education_chunks)}개 청크가 추가되었습니다.")
 
     # 여성가족부_해바라기센터 API 데이터 로드
     # 성폭력 피해자 지원을 전담하는 해바라기센터의 POI시설정보(도로명주소, 지번주소, 위도, 경도, 전화번호 등) 현황의 사회복지 정보서비스를 제공합니다.
