@@ -161,9 +161,12 @@ class RAGModel:
         sources = response.get("source_documents", [])
         titles = []
         for doc in sources:
-            title = doc.metadata.get("title") or doc.metadata.get("source")
-            if title and title not in titles:
-                titles.append(title)
+            title = doc.metadata.get("source") or doc.metadata.get("title")
+            if title:
+                # 경로명과 파일 확장자 제거
+                title = os.path.splitext(os.path.basename(title))[0]
+                if title not in titles:
+                    titles.append(title)
         if titles:
             source_text = "\n\n📚 참고한 문서:\n" + "\n".join(f"- {t}" for t in titles)
             answer += source_text
