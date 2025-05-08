@@ -3,6 +3,7 @@ from data_loader import (
     load_center_data,
     load_all_hanultari_jsons,
     load_korean_education_data,
+    load_translator_data,
     create_text_splitter,
     split_documents,
 )
@@ -36,11 +37,22 @@ def main():
     print(f"한울타리 프로그램 데이터 {len(hanultari_chunks)}개 청크가 추가되었습니다.")
 
     # 결혼이민자 대상 한국어교육 운영기관 API 데이터 로드
+    # 여성가족부_결혼이민자 대상 한국어교육 운영기관 현황 (2024년)
+    # https://www.data.go.kr/iim/api/selectAPIAcountView.do#layer-api-guide
     print("결혼이민자 대상 한국어교육 운영기관 데이터 로딩 중...")
     korean_education_docs = load_korean_education_data(page=1, per_page=1000)
     korean_education_chunks = split_documents(korean_education_docs, text_splitter)
     vector_store.add_documents(korean_education_chunks)
     print(f"결혼이민자 대상 한국어교육 운영기관 데이터 {len(korean_education_chunks)}개 청크가 추가되었습니다.")
+
+    # 한국건강가정진흥원_전국 다문화가족지원센터 통번역 지원사 배치현황 API 데이터 로드
+    # 한국건강가정진흥원_전국 다문화가족지원센터 통번역 지원사 배치현황 (2024년)
+    # https://www.data.go.kr/tcs/dss/selectFileDataDetailView.do?publicDataPk=3081602#tab-layer-openapi
+    print("한국건강가정진흥원_전국 다문화가족지원센터 통번역 지원사 배치현황 데이터 로딩 중...")
+    translator_docs = load_translator_data(page=1, per_page=1000)
+    translator_chunks = split_documents(translator_docs, text_splitter)
+    vector_store.add_documents(translator_chunks)
+    print(f"한국건강가정진흥원_전국 다문화가족지원센터 통번역 지원사 배치현황 데이터 {len(korean_education_chunks)}개 청크가 추가되었습니다.")
     
     # 다문화가족지원센터 데이터 분할 및 추가
     center_chunks = split_documents(center_docs, text_splitter)
