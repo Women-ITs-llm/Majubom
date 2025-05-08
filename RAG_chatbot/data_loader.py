@@ -1,8 +1,10 @@
 # RAG_chatbot/data_loader.py
 import os
+import re
 import json
 import glob
 import requests
+import subprocess
 from langchain_community.document_loaders import PyMuPDFLoader
 from langchain_core.documents import Document
 from langchain.text_splitter import CharacterTextSplitter
@@ -67,6 +69,7 @@ def load_all_hanultari_jsons(folder_path: str) -> list[Document]:
 
     return all_docs
 
+# 여성가족부_결혼이민자 대상 한국어교육기관 정보, 한국건강가정진흥원_전국 다문화가족지원센터 통번역 지원사 배치현황
 def load_data_by_api(url: str, page: int = 1, per_page: int = 1000) -> dict:
     service_key = os.getenv("DATA_API_KEY")
     
@@ -84,6 +87,19 @@ def load_data_by_api(url: str, page: int = 1, per_page: int = 1000) -> dict:
     response.raise_for_status()  # 실패하면 예외 발생
 
     return response.json()
+
+# 여성가족부 해바라기센터 정보 API 의 경우 curl 사용
+def load_sunflower_center_data_by_api(url: str, page: int = 1, per_page: int = 100) -> dict:
+
+    service_key = os.getenv("DATA_API_KEY")
+
+    api_request_url = f"{url}?serviceKey={service_key}&pageNo={page}&numOfRows={per_page}&type=json"
+    cmd = ["curl", "-s", "-X", "GET", api_request_url, "-H", "accept: */*"]
+
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    data = json.loads(result.stdout)
+
+    return data
 
 def load_korean_education_data(page: int = 1, per_page: int = 1000) -> list[Document]:
     """여성가족부 결혼이민자 대상 한국어 교육기관 정보 API를 호출하고, VectorDB에 저장한다."""
@@ -145,6 +161,47 @@ def load_translator_data(page: int = 1, per_page: int = 1000) -> list[Document]:
         }))
 
     return documents
+
+def load_sunflower_center_data(page: int = 1, per_page: int = 100) -> list[Document]:
+    """여성가족부 해바라기센터 정보 API를 호출하고, VectorDB에 저장한다."""
+    sunflower_centor_url = "https://apis.data.go.kr/1383000/gmis/sfCnterServiceV2/getSfCnterListV2"
+    result = load_sunflower_center_data_by_api(url=sunflower_centor_url, page=page, per_page=per_page)
+    data_list = result.get("response", {}).get("body", {}).get("items", {}).get("item", [])
+    documents = []
+
+    for item in data_list:
+        contact_number = item.get('rprsTelno') or "전화번호 정보 없음"
+
+        if contact_number != "전화번호 정보 없음":
+            contact_number = format_korean_phone(contact_number)
+
+        content = "\n".join([
+            "여성가족부 해바라기센터 정보",
+            f"센터명: {item.get('cnterNm') or '센터명 정보 없음'}",
+            f"주소: {item.get('roadNmAddr') or item.get('lotnoAddr') or '주소 정보 없음'}",
+            f"연락처: {contact_number}",
+            f"운영시간: {item.get('operHrCn') or '운영시간 정보 없음'}",
+            f"센터지원안내: {item.get('sprtCnt') or '센터지원 정보 없음'}",
+            f"홈페이지: {item.get('hmpgAddr') or '홈페이지 정보 없음'}",
+            f"이메일: {item.get('emlAddr') or '이메일 정보 없음'}",
+        ])
+        documents.append(Document(page_content=content, metadata={
+            "source": "여성가족부 해바라기센터 정보 (공공데이터포털 제공)",
+            "type": "API to Vector DB",
+            "category": "sunflower_center_info"
+        }))
+
+    return documents
+
+# 전화번호 포맷 통일 함수 (021234567 -> 02-123-4567)
+# 여성가족부 해바라기센터 연락처 포맷에 사용
+def format_korean_phone(contact_number):
+    # 지역번호가 2자리인 경우 (서울 02)
+    if contact_number.startswith("02"):
+        return re.sub(r"^(02)(\d{3,4})(\d{4})$", r"\1-\2-\3", contact_number)
+    else:
+        # 나머지는 지역번호가 3자리
+        return re.sub(r"^(\d{3})(\d{3,4})(\d{4})$", r"\1-\2-\3", contact_number)
 
 def create_text_splitter(chunk_size=1000, chunk_overlap=100):
     """텍스트 분할기 생성"""
