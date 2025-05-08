@@ -57,6 +57,7 @@ def load_hanultari_json(json_path: str) -> list[Document]:
 
 def load_all_hanultari_jsons(folder_path: str) -> list[Document]:
     """폴더 내 모든 한울타리 JSON 파일을 Document 리스트로 로딩"""
+    """폴더 내 모든 JSON 파일을 Document 리스트로 로딩하므로 다누리(danuri_2025-04-26-program.json) 도 로딩"""
     json_files = glob.glob(f"{folder_path}/*.json")
     all_docs = []
 
