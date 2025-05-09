@@ -84,6 +84,7 @@ DB_PASSWORD=postgres
 OPENROUTER_API_KEY=your_openrouter_api_key
 OPENAI_API_KEY=your_openai_api_key
 DEEPSEEK_API_KEY=your_deepseek_api_key
+DATA_API_KEY=your_data.go.kr_api_key (공공데이터포털 인증키(Decoding))
 ```
 
 ### 2️⃣ 패키지 설치
@@ -94,7 +95,12 @@ Python 가상환경을 활성화한 후, 필요한 패키지를 설치합니다.
 pip install -r requirements.txt
 ```
 
-### 3️⃣ 데이터베이스 설정 (PostgreSQL)
+### 3️⃣ 데이터베이스 설정 (PGVector + Docker, PostgreSQL)
+벡터 데이터베이스 PGVector를 사용할 경우 Docker compose 파일을 실행합니다.
+```shell
+cd RAG_chatbot
+docker-compose up -d
+```
 
 로컬 환경의 postgresql를 사용할 경우 extension을 생성해줍니다.
 
