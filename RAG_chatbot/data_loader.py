@@ -5,6 +5,7 @@ import json
 import glob
 import requests
 import subprocess
+import xml.etree.ElementTree as ET
 from langchain_community.document_loaders import PyMuPDFLoader
 from langchain_core.documents import Document
 from langchain.text_splitter import CharacterTextSplitter
@@ -88,18 +89,41 @@ def load_data_by_api(url: str, page: int = 1, per_page: int = 1000) -> dict:
 
     return response.json()
 
-# 여성가족부 해바라기센터 정보 API 의 경우 curl 사용
+# # 여성가족부 해바라기센터 정보 API 의 경우 curl 사용
 def load_sunflower_center_data_by_api(url: str, page: int = 1, per_page: int = 100) -> dict:
 
-    service_key = os.getenv("DATA_API_KEY")
+    # service_key = os.getenv("DATA_API_KEY")
 
-    api_request_url = f"{url}?serviceKey={service_key}&pageNo={page}&numOfRows={per_page}&type=json"
+    # api_request_url = f"{url}?serviceKey={service_key}&pageNo={page}&numOfRows={per_page}&type=json"
+    # cmd = ["curl", "-s", "-X", "GET", api_request_url, "-H", "accept: */*"]
+
+    # result = subprocess.run(cmd, capture_output=True, text=True)
+    # print("=== 요청 URL ===")
+    # print(" ".join(cmd))
+    # print("=== STDOUT ===")
+    # print(repr(result.stdout))  # 문자열 전체 확인
+    # print("=== STDERR ===")
+    # print(result.stderr)
+
+    # data = json.loads(result.stdout)
+    # return data
+
+    service_key = os.getenv("SUNFLOWER_API_KEY")
+    api_request_url = f"{url}?serviceKey={service_key}&pageNo={page}&numOfRows={per_page}&type=xml"
     cmd = ["curl", "-s", "-X", "GET", api_request_url, "-H", "accept: */*"]
+    result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8")
 
-    result = subprocess.run(cmd, capture_output=True, text=True)
-    data = json.loads(result.stdout)
+    if not result.stdout.strip():
+        raise ValueError("❌ API 응답이 비어 있습니다.")
 
-    return data
+    try:
+        root = ET.fromstring(result.stdout)
+    except ET.ParseError:
+        print("❌ XML 파싱 실패. 응답 내용:\n", result.stdout[:300])
+        raise
+
+    items = root.findall(".//item")
+    return items  # Element 객체 리스트 반환
 
 def load_korean_education_data(page: int = 1, per_page: int = 1000) -> list[Document]:
     """여성가족부 결혼이민자 대상 한국어 교육기관 정보 API를 호출하고, VectorDB에 저장한다."""
@@ -118,34 +142,70 @@ def load_translator_data(page: int = 1, per_page: int = 1000) -> list[Document]:
     
     return data_list
 
+# def load_sunflower_center_data(page: int = 1, per_page: int = 100) -> list[Document]:
+#     """여성가족부 해바라기센터 정보 API를 호출하고, VectorDB에 저장한다."""
+#     sunflower_centor_url = "https://apis.data.go.kr/1383000/gmis/sfCnterServiceV2/getSfCnterListV2"
+#     result = load_sunflower_center_data_by_api(url=sunflower_centor_url, page=page, per_page=per_page)
+#     data_list = result.get("response", {}).get("body", {}).get("items", {}).get("item", [])
+#     documents = []
+
+#     for item in data_list:
+#         contact_number = item.get('rprsTelno') or "전화번호 정보 없음"
+
+#         if contact_number != "전화번호 정보 없음":
+#             contact_number = format_korean_phone(contact_number)
+
+#         content = "\n".join([
+#             "여성가족부 해바라기센터 정보 (365일 24시간 성폭력, 가정폭력, 성매매, 교제폭력, 스토킹 피해자에게 통합적인 서비스를 제공하는 기관)",
+#             f"센터명: {item.get('cnterNm') or '센터명 정보 없음'}",
+#             f"주소: {item.get('roadNmAddr') or item.get('lotnoAddr') or '주소 정보 없음'}",
+#             f"연락처: {contact_number}",
+#             f"운영시간: {item.get('operHrCn') or '운영시간 정보 없음'}",
+#             f"센터지원안내: {item.get('sprtCnt') or '센터지원 정보 없음'}",
+#             f"홈페이지: {item.get('hmpgAddr') or '홈페이지 정보 없음'}",
+#             f"이메일: {item.get('emlAddr') or '이메일 정보 없음'}",
+#         ])
+#         documents.append(Document(page_content=content, metadata={
+#             "source": "여성가족부 해바라기센터 정보 (공공데이터포털 제공)",
+#             "type": "API to Vector DB",
+#             "category": "sunflower_center_info"
+#         }))
+
+#     return documents
+
 def load_sunflower_center_data(page: int = 1, per_page: int = 100) -> list[Document]:
-    """여성가족부 해바라기센터 정보 API를 호출하고, VectorDB에 저장한다."""
+    """여성가족부 해바라기센터 정보 API를 호출하고, XML 응답을 파싱하여 Document 리스트로 반환"""
     sunflower_centor_url = "https://apis.data.go.kr/1383000/gmis/sfCnterServiceV2/getSfCnterListV2"
-    result = load_sunflower_center_data_by_api(url=sunflower_centor_url, page=page, per_page=per_page)
-    data_list = result.get("response", {}).get("body", {}).get("items", {}).get("item", [])
+    xml_items = load_sunflower_center_data_by_api(url=sunflower_centor_url, page=page, per_page=per_page)
+
     documents = []
 
-    for item in data_list:
-        contact_number = item.get('rprsTelno') or "전화번호 정보 없음"
+    for item in xml_items:
+        def get(tag): return item.findtext(tag) or ""
 
+        contact_number = get("rprsTelno") or "전화번호 정보 없음"
         if contact_number != "전화번호 정보 없음":
             contact_number = format_korean_phone(contact_number)
 
         content = "\n".join([
             "여성가족부 해바라기센터 정보 (365일 24시간 성폭력, 가정폭력, 성매매, 교제폭력, 스토킹 피해자에게 통합적인 서비스를 제공하는 기관)",
-            f"센터명: {item.get('cnterNm') or '센터명 정보 없음'}",
-            f"주소: {item.get('roadNmAddr') or item.get('lotnoAddr') or '주소 정보 없음'}",
+            f"센터명: {get('cnterNm') or '센터명 정보 없음'}",
+            f"주소: {get('roadNmAddr') or get('lotnoAddr') or '주소 정보 없음'}",
             f"연락처: {contact_number}",
-            f"운영시간: {item.get('operHrCn') or '운영시간 정보 없음'}",
-            f"센터지원안내: {item.get('sprtCnt') or '센터지원 정보 없음'}",
-            f"홈페이지: {item.get('hmpgAddr') or '홈페이지 정보 없음'}",
-            f"이메일: {item.get('emlAddr') or '이메일 정보 없음'}",
+            f"운영시간: {get('operHrCn') or '운영시간 정보 없음'}",
+            f"센터지원안내: {get('sprtCnt') or '센터지원 정보 없음'}",
+            f"홈페이지: {get('hmpgAddr') or '홈페이지 정보 없음'}",
+            f"이메일: {get('emlAddr') or '이메일 정보 없음'}",
         ])
-        documents.append(Document(page_content=content, metadata={
-            "source": "여성가족부 해바라기센터 정보 (공공데이터포털 제공)",
-            "type": "API to Vector DB",
-            "category": "sunflower_center_info"
-        }))
+
+        documents.append(Document(
+            page_content=content,
+            metadata={
+                "source": "여성가족부 해바라기센터 정보 (공공데이터포털 제공)",
+                "type": "API to Vector DB",
+                "category": "sunflower_center_info"
+            }
+        ))
 
     return documents
 

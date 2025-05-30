@@ -7,7 +7,7 @@ from PIL import Image
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from RAG_chatbot.model import RAGModel
-from app.components.translations import TRANSLATIONS, VALUE_TRANSLATIONS, LANG_CODE_MAP, COUNTRY_FLAGS, get_translation, get_value_translation
+from app.components.translations import TRANSLATIONS, VALUE_TRANSLATIONS, LANG_CODE_MAP, COUNTRY_FLAGS, get_value_translation
 
 # 응답 캐싱
 @st.cache_data(ttl=3600, show_spinner=False)

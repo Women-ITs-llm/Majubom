@@ -1,5 +1,6 @@
 from langchain_postgres import PGVector
 from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_core.documents import Document
 import os
 from dotenv import load_dotenv
 
@@ -17,6 +18,29 @@ def get_db_connection():
     
     connection = f"postgresql+psycopg2://{db_config['DB_USER']}:{db_config['DB_PASSWORD']}@{db_config['DB_HOST']}:{db_config['DB_PORT']}/{db_config['DB_NAME']}"
     return connection
+
+def validate_documents(docs, embeddings_model):
+    """유효한 page_content와 정상 임베딩이 생성되는 문서만 필터링"""
+    docs = [doc for doc in docs if doc.page_content and doc.page_content.strip()]
+    texts = [doc.page_content for doc in docs]
+    metadatas = [doc.metadata for doc in docs]
+
+    embeddings = embeddings_model.embed_documents(texts)
+
+    valid_docs = []
+    for text, meta, emb in zip(texts, metadatas, embeddings):
+        if (
+            emb and
+            isinstance(emb, list) and
+            len(emb) > 0 and
+            all(isinstance(x, float) for x in emb)
+        ):
+            valid_docs.append(Document(page_content=text, metadata=meta))
+        else:
+            print("❌ 임베딩 실패 - 제거된 문서:", text[:50].replace("\n", " "))
+
+    return valid_docs
+
 
 def create_vector_store(documents=None, collection_name="laws_db"):
     """
@@ -39,9 +63,12 @@ def create_vector_store(documents=None, collection_name="laws_db"):
         use_jsonb=True
     )
     
-    # 새 문서가 있는 경우만 추가
+    # 문서가 존재할 경우에만 추가
     if documents:
-        vector_store.add_documents(documents)
+        valid_docs = validate_documents(documents, embeddings)
+
+        if valid_docs:
+            vector_store.add_documents(valid_docs)
     
     return vector_store
 

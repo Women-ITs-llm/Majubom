@@ -9,7 +9,7 @@ from data_loader import (
     split_documents,
     split_csv,
 )
-from vector_store import create_vector_store, create_retriever
+from vector_store import create_vector_store, create_retriever, validate_documents
 from model import create_qa_chain
 
 def main():
@@ -36,7 +36,8 @@ def main():
     print("한울타리 정책 프로그램 데이터 로딩 중...")
     hanultari_docs = load_all_hanultari_jsons("data/")
     hanultari_chunks = split_documents(hanultari_docs, text_splitter)
-    vector_store.add_documents(hanultari_chunks)
+    valid_chunks = validate_documents(hanultari_chunks, vector_store.embeddings)
+    vector_store.add_documents(valid_chunks)
     print(f"한울타리 프로그램 데이터 {len(hanultari_chunks)}개 청크가 추가되었습니다.")
 
     # 결혼이민자 대상 한국어교육 운영기관 API 데이터 로드
@@ -46,7 +47,8 @@ def main():
     print(f"{data} 로딩 중...")
     korean_education_data = load_korean_education_data(page=1, per_page=1000)
     korean_education_chunks = split_csv(korean_education_data, data, max_rows=10)
-    vector_store.add_documents(korean_education_chunks)
+    valid_chunks = validate_documents(korean_education_chunks, vector_store.embeddings)
+    vector_store.add_documents(valid_chunks)
     print(f"{data} {len(korean_education_chunks)}개 청크가 추가되었습니다.")
 
     # 한국건강가정진흥원_전국 다문화가족지원센터 통번역 지원사 배치현황 API 데이터 로드
@@ -56,7 +58,8 @@ def main():
     print(f"{data} 로딩 중...")
     translator_data = load_translator_data(page=1, per_page=1000)
     translator_chunks = split_csv(translator_data, data, max_rows=10)
-    vector_store.add_documents(translator_chunks)
+    valid_chunks = validate_documents(translator_chunks, vector_store.embeddings)
+    vector_store.add_documents(valid_chunks)
     print(f"{data} {len(korean_education_chunks)}개 청크가 추가되었습니다.")
 
     # 여성가족부_해바라기센터 API 데이터 로드
@@ -65,12 +68,14 @@ def main():
     print("여성가족부_해바라기센터 데이터 로딩 중...")
     sunflower_docs = load_sunflower_center_data(page=1, per_page=100)
     sunflower_chunks = split_documents(sunflower_docs, text_splitter)
-    vector_store.add_documents(sunflower_chunks)
+    sunflower_chunks = [doc for doc in sunflower_chunks if doc.page_content.strip()]
+    valid_chunks = validate_documents(sunflower_chunks, vector_store.embeddings)
     print(f"여성가족부_해바라기센터 데이터 {len(sunflower_chunks)}개 청크가 추가되었습니다.")
-    
+
     # 다문화가족지원센터 데이터 분할 및 추가
     center_chunks = split_documents(center_docs, text_splitter)
-    vector_store.add_documents(center_chunks)
+    valid_chunks = validate_documents(center_chunks, vector_store.embeddings)
+    vector_store.add_documents(valid_chunks)
     print(f"다문화가족지원센터 데이터 {len(center_chunks)}개 청크가 추가되었습니다.")
     
     # 리트리버 생성

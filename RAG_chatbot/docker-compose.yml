@@ -3,7 +3,7 @@
 version: "3"
 services:
   db:
-    hostname: 127.0.0.1
+    # hostname: 127.0.0.1
     image: pgvector/pgvector:pg16
     ports:
       # postgres 의 기본 포트
